@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Document</title>
+	<title>Markdown-Editor</title>
 	<style>
 		body {
 			font-family: sans-serif;
@@ -26,19 +26,23 @@
 	<hr>
 	<h2>Markdown Output:</h2>
 	<pre id="md" style="white-space: pre-wrap; background-color: lightblue; padding: 5px; border-radius: 5px;"></pre>
+
+	<script src="editor.js"></script>
+	<script src="markdownExporter.js"></script>
+	
+	<script>
+		const editorDomNode = document.querySelector(".editor")
+		const editor = new Editor(editorDomNode)
+		const markdownExporter = new MarkdownExporter(editorDomNode)
+	
+		showMD = () =>  document.querySelector("#md").innerText = markdownExporter.export()
+		editorDomNode.oninput = (event) => { showMD() }
+		showMD()
+	</script>
+
+	<footer style="font-size: small;">
+		Markdown-Editor · AGPL-3.0 · <a href="https://github.com/linuskmr/markdown-editor">Sourcecode</a>
+	</footer>
 </body>
-
-<script src="editor.js"></script>
-<script src="markdownExporter.js"></script>
-
-<script>
-	const editorDomNode = document.querySelector(".editor")
-	const editor = new Editor(editorDomNode)
-	const markdownExporter = new MarkdownExporter(editorDomNode)
-
-	showMD = () =>  document.querySelector("#md").innerText = markdownExporter.export()
-	editorDomNode.oninput = (event) => { showMD() }
-	showMD()
-</script>
 
 </html>
