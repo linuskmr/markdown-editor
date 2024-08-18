@@ -17,7 +17,6 @@ class Editor {
 		if (!(domNode instanceof HTMLElement)) { // Don't remove the brackets! https://stackoverflow.com/a/15359468/14350146
 			throw new Error(`No editor found with query selector '${querySelector}'`)
 		}
-		console.log(domNode.contentEditable)
 		if (domNode.contentEditable !== "true") {
 			throw new Error("Editor needs the domNode to have 'contentEditable=\"true\"'")
 		}
@@ -29,34 +28,12 @@ class Editor {
 		this.#addLinkEdits()
 	}
 
-	/**
-	 * Adds a heading to the editor at the current cursor position
-	 * @param {number} level The heading level (1-6)
-	 */
-	addHeading(level) {
-		if (level < 1 || level > 6) {
-			throw new Error(`Invalid heading level: ${level}`)
-		}
-		const headingTag = "h" + level
-		const headingElement = document.createElement(headingTag)
-
-		const selectionContent = this.#getCursorSelectionContent()
-		if (selectionContent.textContent !== "") {
-			headingElement.appendChild(selectionContent)
-		} else {
-			headingElement.innerText = headingTag
-		}
-
-		this.#insertNode(headingElement)
-		// TODO: The newly inserted element is selected, so typing removes the element. Try to focus the inner text of the element instead.
-	}
-
 	addUnorderedList() {
 		const ul = document.createElement("ul")
 		const li = document.createElement("li")
 		ul.appendChild(li)
 		
-		const selectionContent = this.#getCursorSelectionContent()
+		const selectionContent = window.getSelection().getRangeAt(0).extractContents()
 		if (selectionContent.textContent !== "") {
 			li.appendChild(selectionContent)
 		} else {
@@ -71,7 +48,7 @@ class Editor {
 		const li = document.createElement("li")
 		ol.appendChild(li)
 		
-		const selectionContent = this.#getCursorSelectionContent()
+		const selectionContent = window.getSelection().getRangeAt(0).extractContents()
 		if (selectionContent.textContent !== "") {
 			li.appendChild(selectionContent)
 		} else {
@@ -95,34 +72,86 @@ class Editor {
 		this.#insertNode(img)
 	}
 
-	addItalic() {
-		const italic = document.createElement('i')
-
-		const selectionContent = this.#getCursorSelectionContent()
-		if (selectionContent.textContent !== "") {
-			italic.appendChild(selectionContent)
-		} else {
-			italic.innerText = "italic"
+	/**
+	 * Toggles the tag of the current cursor position/selection.
+	 * 
+	 * If nothing is selected and the cursor just blinks and points into the editor,
+	 * a new node with the tag type `tagName` is created with the tag type as default text.
+	 * 
+	 * If something is selected and not all children are of the tag type `tagName`,
+	 * the whole selected text is wrapped in *one* new node of the tag type,
+	 * while children of the selected text already having the tag type are removed from them.
+	 * This way, tags are merged, e.g. a `hello <b>world</b>` becomes `<b>hello world<b>` when toggling bold.
+	 * 
+	 * If something is selected and either is a tag of type `tagName` or all children are already of the tag type `tagName`,
+	 * the tag type is removed from all children of the selected text.
+	 * 
+	 * @param {string} tagName `b` (bold), `i` (italics), `u` (underline)
+	 * @returns 
+	 */
+	toggleTag(tagName, attributes) {
+		tagName = tagName.toUpperCase()
+		const selectedRange = window.getSelection().getRangeAt(0)
+		const selectedContents = selectedRange.extractContents()
+		const isSelected = selectedContents.textContent !== ""
+		
+		if (!isSelected) {
+			// Create a new node with the tag type,
+			// optionally with attributes and the selected text as inner text
+			// with the tag type as default text (the node isn't visible otherwise).
+			const node = document.createElement(tagName)
+			for (const [key, value] of Object.entries(attributes || [])) {
+				node.setAttribute(key, value)
+			}
+			node.innerText = tagName
+			selectedRange.insertNode(node)
+			return
 		}
 
-		this.#insertNode(italic)
-	}
+		const isRootOfTagType = selectedContents.tagName === tagName
+		const areAllChildrenOfTagType = Array.from(selectedContents.childNodes).filter(node => node.textContent !== "").every(node => node.nodeName === tagName)
+		const isAlreadyOfTagType = isRootOfTagType || areAllChildrenOfTagType
 
-	addBold() {
-		const bold = document.createElement('b')
-
-		const selectionContent = this.#getCursorSelectionContent()
-		if (selectionContent.textContent !== "") {
-			bold.appendChild(selectionContent)
-		} else {
-			bold.innerText = "bold"
+		// Remove the tag type from all children of the selected text.
+		// Later, the whole selected text will be wrapped in *one* new node of the tag type.
+		for (const child of selectedContents.childNodes) {
+			this.#removeInnerTag(child, tagName)
 		}
 
-		this.#insertNode(bold)		
+		let node;
+		if (!isAlreadyOfTagType) {
+			// The selected text is not already of the tag type,
+			// so wrap it in a new node of the tag type
+			node = document.createElement(tagName)
+		} else {
+			// Use a DocumentFragment as temporary container without being a tag itself
+			node = document.createDocumentFragment()
+		}
+		node.appendChild(selectedContents)
+		selectedRange.insertNode(node)
 	}
 
 	/**
-	 * Inserts `element` at the current cursor position in the editor, or replaces the current cursor selection with the new element
+	 * Removes the tag `tagName` from the node and all its children.
+	 * @param {*} node The node and its children to remove the tag from.
+	 * @param {*} tagName The tag to remove.
+	 */
+	#removeInnerTag(node, tagName) {
+		tagName = tagName.toUpperCase()
+		for (const child of node.childNodes) {
+			this.#removeInnerTag(child, tagName)
+		}
+		if (node.tagName === tagName && node.parentNode !== undefined) {
+			while (node.firstChild) {
+				node.parentNode.insertBefore(node.firstChild, node)
+			}
+			node.parentNode.removeChild(node)
+		}
+	}
+
+	/**
+	 * Inserts `node` at the current cursor position into the editor,
+	 * or replaces the current cursor selection with the new element.
 	 * @param {Node} node The element to add
 	 */
 	#insertNode(node) {
@@ -149,16 +178,5 @@ class Editor {
 				console.log(`Link clicked: ${link.text} -> ${link.href}`)
 			}
 		}
-	}
-
-	/**
-	 * Returns the content of the current cursor selection in the editor, or null if nothing is selected
-	 * @returns {DocumentFragment|null}
-	 */
-	#getCursorSelectionContent() {
-		const cursorPosition = window.getSelection().getRangeAt(0)
-		// Since the content is replaced/embedded into another node,
-		// we don't need a copy as provided by `cursorPosition.cloneContents()`
-		return cursorPosition.extractContents()
 	}
 }
