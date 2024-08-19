@@ -8,6 +8,10 @@
 		body {
 			font-family: sans-serif;
 		}
+		.editor-content {
+			/* Remove outline border on :focus-visible */
+			outline: 0px solid transparent;
+		}
 		.button-group {
 			display: flex;
 		}
@@ -31,34 +35,39 @@
 	</style>
 </head>
 <body>
-	<div class="button-group">
-		<button onclick="editor.toggleTag('i')" title="Italics"><i>i</i></button>
-		<button onclick="editor.toggleTag('b')" title="Bold"><b>b</b></button>
-		<button onclick="editor.toggleTag('h1')" title="Heading">H1</button>
-		<button onclick="editor.toggleTag('h2')" title="Subheading">H2</button>
-		<button onclick="editor.toggleTag('h3')" title="Subsubheading">H3</button>
-		<button onclick="editor.toggleTag('li')" title="Ordered List">•</button>
-		<button onclick="editor.toggleTag('li')" title="Unordered List">1.</button>
-		<button onclick="editor.toggleTag('a', {'href': '#'})" title="Link">🔗</button>
-		<button onclick="editor.toggleTag('img', {'src': '#'})" title="Image">🖼</button>
+	<div style="display: flex;">
+		<div class="editor">
+			<div class="editor-controls button-group">
+				<button onclick="editor.toggleTag('i')" title="Italics"><i>i</i></button>
+				<button onclick="editor.toggleTag('b')" title="Bold"><b>b</b></button>
+				<button onclick="editor.toggleTag('h1')" title="Heading">H1</button>
+				<button onclick="editor.toggleTag('h2')" title="Subheading">H2</button>
+				<button onclick="editor.toggleTag('h3')" title="Subsubheading">H3</button>
+				<button onclick="editor.toggleTag('li')" title="Ordered List">•</button>
+				<button onclick="editor.toggleTag('li')" title="Unordered List">1.</button>
+				<button onclick="editor.toggleTag('a', {'href': '#'})" title="Link">🔗</button>
+				<button onclick="editor.toggleTag('img', {'src': '#'})" title="Image">🖼</button>
+			</div>
+
+			<div class="editor-content" contenteditable="true" autofocus><h1>Hello to <i>Markdown-Editor!</i></h1><p>But I must explain to you how all this mistaken idea of denouncing of a pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but occasionally circumstances occur in which toil and pain can procure him some great pleasure. To take a <i>trivial</i> <b>example</b>, which of us ever undertakes laborious physical exercise, except to obtain some advantage from it? But who has any right to find fault with a man who chooses to enjoy a pleasure that has no annoying consequences, or one who avoids a pain that produces no resultant pleasure?</p><p>That was <a href="https://www.loremipzum.com/en/">Lorem Ipsum</a> in English.</p><ul><li>a</li><li>b</li><ul><li>b.1</li><li>b.2</li></ul><li>c</li></ul><ol><li>first</li><li>second</li><ol><li>second.1</li><li>second.2</li></ol><li>third</li></ol></div>
+		</div>
+
+		<div>
+			<pre id="md" style="white-space: pre-wrap; background-color: lightblue; padding: 5px; border-radius: 5px;"></pre>
+		</div>
 	</div>
 
-	<div class="editor" contenteditable="true" autofocus><h1>Hello to <i>Markdown-Editor!</i></h1><p>But I must explain to you how all this mistaken idea of denouncing of a pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but occasionally circumstances occur in which toil and pain can procure him some great pleasure. To take a <i>trivial</i> <b>example</b>, which of us ever undertakes laborious physical exercise, except to obtain some advantage from it? But who has any right to find fault with a man who chooses to enjoy a pleasure that has no annoying consequences, or one who avoids a pain that produces no resultant pleasure?</p><p>That was <a href="https://www.loremipzum.com/en/">Lorem Ipsum</a> in English.</p><ul><li>a</li><li>b</li><ul><li>b.1</li><li>b.2</li></ul><li>c</li></ul><ol><li>first</li><li>second</li><ol><li>second.1</li><li>second.2</li></ol><li>third</li></ol></div>
-
-	<hr>
-	<h2>Markdown Output:</h2>
-	<pre id="md" style="white-space: pre-wrap; background-color: lightblue; padding: 5px; border-radius: 5px;"></pre>
-
+	<script src="keyCommand.js"></script>
 	<script src="editor.js"></script>
 	<script src="markdownExporter.js"></script>
 	
 	<script>
-		const editorDomNode = document.querySelector(".editor")
+		const editorDomNode = document.querySelector(".editor-content")
 		const editor = new Editor(editorDomNode)
 		const markdownExporter = new MarkdownExporter(editorDomNode)
 	
 		showMD = () =>  document.querySelector("#md").innerText = markdownExporter.export()
-		editorDomNode.oninput = (event) => { showMD() }
+		editorDomNode.addEventListener("keyup", (event) => { console.log('input'); showMD() })
 		showMD()
 	</script>
 
