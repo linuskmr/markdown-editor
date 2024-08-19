@@ -22,8 +22,8 @@ class Editor {
 		}
 		this.domNode = domNode
 
-		// For `contenteditable` elements like the editor, there is no 'onkeyup' event but 'oninput' instead
-		this.domNode.oninput = (event) => { this.#addLinkEdits() }
+		this.#setupKeyboardCommands()
+		
 		// Initial transformation of the links already in the editor
 		this.#addLinkEdits()
 	}
@@ -33,14 +33,18 @@ class Editor {
 		const li = document.createElement("li")
 		ul.appendChild(li)
 		
-		const selectionContent = window.getSelection().getRangeAt(0).extractContents()
+		const selectedRange = window.getSelection().getRangeAt(0)
+		const selectionContent = selectedRange.extractContents()
 		if (selectionContent.textContent !== "") {
 			li.appendChild(selectionContent)
 		} else {
 			li.innerText = "List item"
 		}
 		
-		this.#insertNode(ul)
+		selectedRange.insertNode(ul)
+		this.#addLinkEdits()
+		this.domNode.focus()
+		this.domNode.dispatchEvent(new Event("keyup"))
 	}
 
 	addOrderedList() {
@@ -48,14 +52,18 @@ class Editor {
 		const li = document.createElement("li")
 		ol.appendChild(li)
 		
-		const selectionContent = window.getSelection().getRangeAt(0).extractContents()
+		const selectedRange = window.getSelection().getRangeAt(0)
+		const selectionContent = selectedRange.extractContents()
 		if (selectionContent.textContent !== "") {
 			li.appendChild(selectionContent)
 		} else {
 			li.innerText = "List item"
 		}
 		
-		this.#insertNode(ol)
+		selectedRange.insertNode(ol)
+		this.#addLinkEdits()
+		this.domNode.focus()
+		this.domNode.dispatchEvent(new Event("keyup"))
 	}
 
 	addLink() {
@@ -105,6 +113,9 @@ class Editor {
 			}
 			node.innerText = tagName
 			selectedRange.insertNode(node)
+			this.#addLinkEdits()
+			this.domNode.focus()
+			this.domNode.dispatchEvent(new Event("keyup"))
 			return
 		}
 
@@ -129,6 +140,9 @@ class Editor {
 		}
 		node.appendChild(selectedContents)
 		selectedRange.insertNode(node)
+		this.#addLinkEdits()
+		this.domNode.focus()
+		this.domNode.dispatchEvent(new Event("keyup"))
 	}
 
 	/**
@@ -167,6 +181,7 @@ class Editor {
 		cursorPosition.insertNode(node)
 		this.#addLinkEdits()
 		this.domNode.focus()
+		this.domNode.dispatchEvent(new Event("input"))
 	}
 
 	/**
@@ -179,4 +194,29 @@ class Editor {
 			}
 		}
 	}
+
+	/**
+	 * Sets up keyboard commands for the editor, so that you can toggle headings, bold, italics using keyboard shortcuts.
+	 */
+	#setupKeyboardCommands() {
+		// Instantiate all key command classes with `this` as the reference to the editor
+		const keyCommands = keyCommandClasses.map(keyCommand => new keyCommand(this))
+
+		this.domNode.addEventListener("keydown", (event) => {
+			const isKeyCommand = keyCommands.some(keyCommand => keyCommand.is(event))
+			if (!isKeyCommand) {
+				return
+			}
+			event.preventDefault();
+		})
+
+		this.domNode.addEventListener("keyup", (event) => {
+			const keyCommand = keyCommands.find(keyCommand => keyCommand.is(event))
+			if (keyCommand === undefined) {
+				return
+			}
+			keyCommand.action(event)
+		})
+	}
 }
+
