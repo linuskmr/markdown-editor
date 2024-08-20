@@ -22,6 +22,32 @@ class Editor {
 		}
 		this.domNode = domNode
 
+		
+		document.addEventListener("selectionchange", event => {
+			// We work with opacity instead of `display: none` so that JS can get a height for the tooltip even if it's not visible
+			const selectedRange = window.getSelection().getRangeAt(0)
+			const tooltip = document.querySelector(".editor-tooltip-outer")
+
+
+			if (selectedRange.cloneContents().textContent === "") {
+				// Nothing is selected. The cursor is just blinking and pointing into the editor.
+				// Don't show the tooltip.
+				tooltip.style.opacity = 0
+				return
+			}
+
+			const selectionPosition = selectedRange.getBoundingClientRect()
+			const selectionCenterXPosition = (selectionPosition.left + selectionPosition.right) / 2
+			const positionX = selectionCenterXPosition - tooltip.getBoundingClientRect().width / 2
+			const marginY = 0
+			const positionY = selectionPosition.top - tooltip.getBoundingClientRect().height - marginY
+
+			tooltip.style.position = "absolute"
+			tooltip.style.top = `${positionY}px`
+			tooltip.style.left = `${positionX}px`
+			tooltip.style.opacity = 1
+		})
+
 		this.#setupKeyboardCommands()
 		
 		// Initial transformation of the links already in the editor
