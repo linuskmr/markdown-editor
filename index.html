@@ -63,6 +63,7 @@
 		</div>
 
 		<div>
+			<button onclick="download()">Download</button>
 			<pre id="md" style="white-space: pre-wrap; background-color: lightblue; padding: 5px; border-radius: 5px;"></pre>
 		</div>
 	</div>
@@ -79,6 +80,22 @@
 		showMD = () =>  document.querySelector("#md").innerText = markdownExporter.export()
 		editorDomNode.addEventListener("keyup", event => { showMD() })
 		showMD()
+
+		function download() {
+			let md = document.querySelector("#md").innerText
+			let file = new Blob([md], { type: "text/plain" })
+			let a = document.createElement("a")
+			let url = URL.createObjectURL(file)
+			a.href = url
+			a.download = "markdown-editor-export.md"
+			document.body.appendChild(a)
+			a.click()
+
+			setTimeout(() => {
+				document.body.removeChild(a)
+				window.URL.revokeObjectURL(url)
+			}, 0)
+		}
 	</script>
 
 	<footer style="font-size: small;">
